@@ -19,47 +19,52 @@ from keras.src.applications.inception_resnet_v2 import InceptionResNetV2
 from keras.src.layers import Dense, Dropout, Flatten, Input
 from keras.src.utils import load_img, img_to_array
 
+model = tf.keras.models.load_model('./my_model.keras')
+print('Model loaded Sucessfully')
 
-if __name__ == '__main__':
-    path = './test/h1.jpeg'
-    image = load_img(path)  # PIL object
-    image = np.array(image, dtype=np.uint8)  # 8 bit array (0,255)
-    image1 = load_img(path, target_size=(224, 224))
-    image_arr_224 = img_to_array(image1) / 255.0  # Convert into array and get the normalized output
+path = 'DataSet/N49.jpeg'
+def object_detection(path):
 
-    # Size of the orginal image
-    h, w, d = image.shape
-    print('Height of the image =', h)
-    print('Width of the image =', w)
+    # Read image
+    image = load_img(path) # PIL object
+    image = np.array(image,dtype=np.uint8) # 8 bit array (0,255)
+    image1 = load_img(path,target_size=(224,224))
 
-    fig = px.imshow(image)
-    fig.update_layout(width=700, height=500, margin=dict(l=1, r=1, b=1, t=1), xaxis_title='Figure 13 - TEST Image')
+    # Data preprocessing
+    image_arr_224 = img_to_array(image1)/255.0 # Convert to array & normalized
+    h,w,d = image.shape
+    test_arr = image_arr_224.reshape(1,224,224,3)
 
-    # image_arr_224.shape
-
-    test_arr = image_arr_224.reshape(1, 224, 224, 3)
-    # test_arr.shape
-
-    model = tf.keras.models.load_model('./my_model.keras')
-    print('Model loaded Sucessfully')
-
+    # Make predictions
     coords = model.predict(test_arr)
-    print(coords)
 
-    denorm = np.array([w, w, h, h])
+    # Denormalize the values
+    denorm = np.array([w,w,h,h])
     coords = coords * denorm
-    print(coords)
-
     coords = coords.astype(np.int32)
-    print(coords)
 
+    # Draw bounding on top the image
     xmin, xmax, ymin, ymax = coords[0]
-    pt1 = (xmin, ymin)
-    pt2 = (xmax, ymax)
+    pt1 =(xmin,ymin)
+    pt2 =(xmax,ymax)
     print(pt1, pt2)
+    cv2.rectangle(image,pt1,pt2,(0,255,0),3)
+    return image, coords
 
-    cv2.rectangle(image, pt1, pt2, (0, 255, 0), 3)
-    fig = px.imshow(image)
+image, cods = object_detection(path)
 
-    fig.update_layout(width=700, height=500, margin=dict(l=1, r=1, b=1, t=1))
-    fig.show()
+fig = px.imshow(image)
+fig.update_layout(width=700, height=500, margin=dict(l=10, r=10, b=10, t=10))
+fig.show()
+
+img = np.array(load_img(path))
+xmin, xmax, ymin, ymax = cods[0]
+roi = img[ymin:ymax,xmin:xmax]
+fig = px.imshow(roi)
+fig.update_layout(width=350, height=250, margin=dict(l=10, r=10, b=10, t=10))
+fig.show()
+
+pt.pytesseract.tesseract_cmd = r'.\Tesseract-OCR\tesseract.exe'
+# extract text from image
+text = pt.image_to_string(roi)
+print(text)
